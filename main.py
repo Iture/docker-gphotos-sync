@@ -17,6 +17,7 @@ class Runner:
         self.enabled = True
         self.is_running=False
         self.status={}
+        self.sync_log=[]
         pass
     async def Process(self,type='Full'):
         async def read_stdout(stdout):
@@ -25,17 +26,20 @@ class Runner:
                 if not buf:
                     break
                 logger.debug(buf.decode().strip())
+                self.sync_log+=[buf.decode().strip()]
         async def read_stderr(stderr):
             while True:
                 buf = await stderr.readline()
                 if not buf:
                     break
                 logger.error(buf.decode().strip())
+                self.sync_log+=[buf.decode().strip()]
 
         if self.is_running:
             logger.error("Sync already running")
             return
         logger.info("Starting sync:%s" % type)
+        self.sync_log=[]
         self.is_running = True
         self.status['job_started'] = str(datetime.datetime.now())
         if type == 'Full':
@@ -58,6 +62,7 @@ class Runner:
 
     async def get_status(self):
         self.status['running'] = self.is_running
+        self.status['log']=self.sync_log
         return self.status
     
     async def periodic_sync(self):
