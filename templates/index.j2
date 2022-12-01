@@ -1,8 +1,7 @@
 <html>
 <head>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://unpkg.com/flowbite@1.5.4/dist/flowbite.min.css" />
-<script src="https://unpkg.com/flowbite@1.5.4/dist/flowbite.js"></script>
+<link href="https://unpkg.com/bonsai.css@latest/dist/bonsai-base.min.css" rel="stylesheet">
+
 <meta http-equiv="refresh" content="5" />
 <script>
     function httpGet(theUrl)
@@ -16,24 +15,28 @@
 </head>
 <body>
 <div>
-    Status:{% if status.is_running %}RUNNING (since: {{ status.job_started}}) {% else %}STOPPED{% endif %}<br>
-    Last sync: {{ status.job_last_run }}
+    <h4>Status:{% if status.is_running %}RUNNING (since: {{ status.job_started}}) {% else %}STOPPED{% endif %}</h4>
+    <h4>Last sync:{{ status.job_last_run }}</h4> 
 </div>
-<div style="margin-top: 10px;">
-    <a href="#" onclick="httpGet('/sync_all')" >
-        <span class="font-semibold transition group-hover/edit:text-gray-700">Full sync ></span>                    
+<div class="group">
+    <a href="#" onclick="httpGet('/sync_all')" class="button button-outline">
+        <span>Full sync ></span>                    
+    </a> 
+
+    <a href="#" onclick="httpGet('/sync_albums')" class="button button-outline">
+        <span>Album sync ></span>                    
     </a> 
 </div> 
 <div style="margin-top: 10px;">
-    <a href="#" onclick="httpGet('/sync_albums')" >
-        <span class="font-semibold transition group-hover/edit:text-gray-700">Album sync ></span>                    
-    </a> 
+    
 </div> 
-<div>Last operations:<br>
+<div><h4>Last operations:</h4><br>
 <div style="font-family:monospace">
-    {% for line in status.log %}
-        {{ line }}<br>
-    {% endfor %}
+    <code>
+        {% for line in status.log %}
+            {{ line }}<br>
+        {% endfor %}
+    </code>
     </div>
 </div>
 </body>
