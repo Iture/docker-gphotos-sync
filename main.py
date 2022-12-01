@@ -1,11 +1,15 @@
-from fastapi import FastAPI
+from fastapi import FastAPI,Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 import asyncio
 import os
 import logging
 import datetime
 
-is_running = False
 app = FastAPI()
+app.mount("/static", StaticFiles(directory='static'),name='static')
+templates = Jinja2Templates(directory="templates")
 
 logging.basicConfig(level=logging.DEBUG,format='[%(name)s] - %(levelname)s - %(message)s')
 logger=logging.getLogger('main')
@@ -79,9 +83,9 @@ runner = Runner()
 async def startup_event_setup() -> None:
     asyncio.create_task(runner.periodic_sync())
     pass
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    return templates.TemplateResponse('index.j2',{'request': request,'status':await runner.get_status()})
 
 @app.get('/sync_all')
 async def get_sync_all():

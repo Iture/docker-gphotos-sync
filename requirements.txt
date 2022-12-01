@@ -12,6 +12,8 @@ google-auth-oauthlib==0.7.1
 gphotos-sync==3.0.3
 h11==0.14.0
 idna==3.4
+Jinja2==3.1.2
+MarkupSafe==2.1.1
 oauthlib==3.2.2
 plum-py==0.8.5
 psutil==5.9.4

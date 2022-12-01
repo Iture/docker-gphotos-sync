@@ -1,0 +1,41 @@
+<html>
+<head>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/flowbite@1.5.4/dist/flowbite.min.css" />
+<script src="https://unpkg.com/flowbite@1.5.4/dist/flowbite.js"></script>
+<meta http-equiv="refresh" content="5" />
+<script>
+    function httpGet(theUrl)
+    {
+        var xmlhr = new XMLHttpRequest();
+        xmlhr.open( "GET", theUrl, false);
+        xmlhr.send( null );
+        return xmlhr.responseText;
+    }
+</script>
+</head>
+<body>
+<div>
+    Status:{% if status.is_running %}RUNNING (since: {{ status.job_started}}) {% else %}STOPPED{% endif %}<br>
+    Last sync: {{ status.job_last_run }}
+</div>
+<div style="margin-top: 10px;">
+    <a href="#" onclick="httpGet('/sync_all')" >
+        <span class="font-semibold transition group-hover/edit:text-gray-700">Full sync ></span>                    
+    </a> 
+</div> 
+<div style="margin-top: 10px;">
+    <a href="#" onclick="httpGet('/sync_albums')" >
+        <span class="font-semibold transition group-hover/edit:text-gray-700">Album sync ></span>                    
+    </a> 
+</div> 
+<div>Last operations:<br>
+<div style="font-family:monospace">
+    {% for line in status.log %}
+        {{ line }}<br>
+    {% endfor %}
+    </div>
+</div>
+</body>
+
+</html>
