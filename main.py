@@ -1,19 +1,13 @@
-from fastapi import FastAPI,Request,HTTPException, BackgroundTasks
+from fastapi import FastAPI
 import asyncio
-
-from configparser import ConfigParser
+import os
 import logging
 import datetime
-
-
 
 is_running = False
 app = FastAPI()
 
-cfg = ConfigParser()
-cfg.read('config/gphotos-sync.ini')
-logging.basicConfig(level=logging.INFO,format='[%(name)s] - %(levelname)s - %(message)s')
-
+logging.basicConfig(level=logging.DEBUG,format='[%(name)s] - %(levelname)s - %(message)s')
 logger=logging.getLogger('main')
 logger.critical('Starting')
 
@@ -25,19 +19,40 @@ class Runner:
         self.status={}
         pass
     async def Process(self,type='Full'):
+        async def read_stdout(stdout):
+            while True:
+                buf = await stdout.readline()
+                if not buf:
+                    break
+                logger.debug(buf.decode().strip())
+        async def read_stderr(stderr):
+            while True:
+                buf = await stderr.readline()
+                if not buf:
+                    break
+                logger.error(buf.decode().strip())
+
         if self.is_running:
             logger.error("Sync already running")
             return
         logger.info("Starting sync:%s" % type)
         self.is_running = True
         self.status['job_started'] = str(datetime.datetime.now())
-        self.status['job_last_run'] = self.status.get('job_finished',None)
-        self.status['job_finished'] = None
-        cmd_line = 'for i in {1..15}; do sleep 1;echo $i ; done'
-        for i in range(0,10):
-            logger.info (i)
-            await asyncio.sleep(1) 
-        self.status['job_finished'] = str(datetime.datetime.now())
+        if type == 'Full':
+            cmd_line = 'gphotos-sync /storage'
+        elif type == 'Albums':
+            cmd_line = 'gphotos-sync --skip-files /storage'
+        try:
+            proc = await asyncio.create_subprocess_shell(cmd=cmd_line,stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
+            await asyncio.gather(
+                read_stderr(proc.stderr),
+                read_stdout(proc.stdout)
+            )
+        except Exception as e:
+            logger.error(e)
+
+        self.status['job_started'] = None
+        self.status['job_last_run'] = str(datetime.datetime.now())
         self.is_running = False
         logger.info("Finished sync:%s" % type)
 
@@ -48,9 +63,10 @@ class Runner:
     async def periodic_sync(self):
         while self.enabled:
             await self.Process('Full')
-            await asyncio.sleep(30)
-
-
+            delay = os.getenv('SYNC_INTERVAL')
+            if not delay:
+                delay = 30
+            await asyncio.sleep(int(delay))
 
 runner = Runner()
 
