@@ -6,6 +6,7 @@ import asyncio
 import os
 import logging
 import datetime
+import aiopath,aiosqlite
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory='static'),name='static')
@@ -22,6 +23,7 @@ class Runner:
         self.is_running=False
         self.status={}
         self.sync_log=[]
+        self.metadata = {}
         pass
     async def Process(self,type='Full'):
         async def read_stdout(stdout):
@@ -69,19 +71,52 @@ class Runner:
         self.status['log']=self.sync_log
         return self.status
     
-    async def periodic_sync(self):
+    async def periodic_sync(self, delay = 300):
         while self.enabled:
             await self.Process('Full')
-            delay = os.getenv('SYNC_INTERVAL')
-            if not delay:
-                delay = 30
-            await asyncio.sleep(int(delay))
+            await self.filesystem_sync()
+            await asyncio.sleep(delay)
 
+    async def filesystem_sync(self):
+        logger.info('Reading state from gphotos')
+        try:
+            async with aiosqlite.connect('/storage/gphotos.sqlite') as db:
+                async with db.execute('SELECT AlbumName,Size,StartDate from Albums WHERE Downloaded = 1') as cursor:
+                    async for row in cursor:
+                        if not row[0] in self.metadata:
+                            self.metadata[row[0]]={}
+                            self.metadata[row[0]]['update']=str(row[2])
+                        self.metadata[row[0]]['size']=row[1]
+                        self.metadata[row[0]]['start_date']=str(row[2])
+        except Exception as e:
+            logger.error("Problem with scanning database: %s" % e)    
+        logger.debug("Reading paths on disk")
+        try:
+            album_path = aiopath.AsyncPath('/storage/albums')
+            albums_on_disk = [f async for f in album_path.glob("**")]
+        
+            for album_on_disk in albums_on_disk:
+                logger.debug("Checking:%s" % str(album_on_disk))
+                for album_name in self.metadata:
+                    if album_name in str(album_on_disk):
+                        self.metadata[album_name]['path']=str(album_on_disk)
+                        if not 'files' in self.metadata[album_name]:
+                                logger.debug("listing files in :%s" % str(album_on_disk))
+                                self.metadata[album_name]['files']={}
+                                files_in_album = [f async for f in album_on_disk.glob("*")]
+                                for file in files_in_album:
+                                    self.metadata[album_name]['files'][file.name] = {
+                                        'path' : str(file) ,
+                                    }
+        except Exception as e:
+            logger.error("Problem with directory scan:%s" % e)
+        pass
 runner = Runner()
 
 @app.on_event('startup')
 async def startup_event_setup() -> None:
-    asyncio.create_task(runner.periodic_sync())
+
+    asyncio.create_task(runner.periodic_sync(os.getenv('SYNC_INTERVAL') if os.getenv('SYNC_INTERVAL') else 300))
     pass
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -97,6 +132,19 @@ async def get_sync_albums():
     asyncio.create_task(runner.Process('Albums'))
     return await runner.get_status()
 
+
+
+@app.get("/sync/{type}")
+async def get_sync(request: Request, type="all"):
+    if type == 'all':
+        asyncio.create_task(runner.Process('Full'))
+    elif type == 'albums':
+        asyncio.create_task(runner.Process('Albums'))
+    return await runner.get_status()
+
+@app.get("/albums")
+async def get_albums():
+    return runner.metadata
 
 
 @app.get('/status')

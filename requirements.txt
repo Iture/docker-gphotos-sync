@@ -1,7 +1,11 @@
+aiofile==3.8.1
+aiopath==0.5.12
+aiosqlite==0.17.0
 anyio==3.6.2
 appdirs==1.4.4
 attrs==22.1.0
 cachetools==5.2.0
+caio==0.9.11
 certifi==2022.9.24
 charset-normalizer==2.1.1
 click==8.1.3

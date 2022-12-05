@@ -15,7 +15,7 @@
 </head>
 <body>
 <div>
-    <h4>Status:{% if status.is_running %}RUNNING (since: {{ status.job_started}}) {% else %}STOPPED{% endif %}</h4>
+    <h4>Status:{% if status.running  %}RUNNING (since: {{ status.job_started}}) {% else %}STOPPED{% endif %}</h4>
     <h4>Last sync:{{ status.job_last_run }}</h4> 
 </div>
 <div class="group">
