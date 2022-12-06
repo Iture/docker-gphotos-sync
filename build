@@ -1,0 +1,6 @@
+#!/bin/bash
+VERSION=1.0.3
+docker image build --pull --file '/Users/kapturm/Documents/Code/gphotos-sync/Dockerfile' --tag 'emka77/gphotossync:latest' --tag "emka77/gphotossync:$VERSION" /Users/kapturm/Documents/Code/gphotos-sync
+docker login
+docker image push emka77/gphotossync:latest
+docker image push emka77/gphotossync:$VERSION
