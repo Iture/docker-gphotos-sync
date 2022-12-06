@@ -135,19 +135,6 @@ async def startup_event_setup() -> None:
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     return templates.TemplateResponse('index.j2',{'request': request,'status':await runner.get_status()})
-
-@app.get('/sync_all')
-async def get_sync_all():
-    asyncio.create_task(runner.Process('Full'))
-    return await runner.get_status()
-
-@app.get('/sync_albums')
-async def get_sync_albums():
-    asyncio.create_task(runner.Process('Albums'))
-    return await runner.get_status()
-
-
-
 @app.get("/sync/{type}")
 async def get_sync(request: Request, type="all"):
     if type == 'all':
@@ -159,8 +146,6 @@ async def get_sync(request: Request, type="all"):
 @app.get("/albums")
 async def get_albums():
     return runner.metadata
-
-
 @app.get('/status')
 async def get_status():
     return await runner.get_status()
